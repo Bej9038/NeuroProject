@@ -20,6 +20,7 @@ import typing as tp
 
 import torch
 import torch.nn.functional as F
+import torchaudio as ta
 
 from .audio import audio_read, audio_info
 from .audio_utils import convert_audio
@@ -374,7 +375,8 @@ class AudioDataset:
                 max_seek = max(0, file_meta.duration - self.segment_duration * self.min_segment_ratio)
                 seek_time = torch.rand(1, generator=rng).item() * max_seek
                 try:
-                    out, sr = audio_read(file_meta.path, seek_time, self.segment_duration, pad=False)
+                    # out, sr = audio_read(file_meta.path, seek_time, self.segment_duration, pad=False)
+                    out, sr = ta.load(file_meta.path)
                     out = convert_audio(out, sr, self.sample_rate, self.channels)
                     n_frames = out.shape[-1]
                     target_frames = int(self.segment_duration * self.sample_rate)

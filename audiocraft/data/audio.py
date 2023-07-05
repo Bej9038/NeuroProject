@@ -137,7 +137,7 @@ def audio_read(filepath: tp.Union[str, Path], seek_time: float = 0.,
         if len(wav.shape) == 1:
             wav = torch.unsqueeze(wav, 0)
     elif (
-        fp.suffix in ['.wav', '.mp3'] and fp.suffix[1:] in ta.utils.sox_utils.list_read_formats()
+        fp.suffix in ['.wav', '.mp3'] # and fp.suffix[1:] in ta.utils.sox_utils.list_read_formats()
         and duration <= 0 and seek_time == 0
     ):
         # Torchaudio is faster if we load an entire file at once.

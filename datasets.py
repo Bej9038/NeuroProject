@@ -6,19 +6,25 @@ import torchaudio
 from torch.utils.data import Dataset, random_split
 
 
-class KshmrVol3(Dataset):
-    def __init__(self):
-        self.directory = "./data/kshmr_data/audio_files"
-        self.text_labels = pd.read_csv("./data/kshmr_data/descriptions", delimiter=' : ', header=None)
 
-    def __len__(self):
-        return len(self.text_labels)
-
-    def __getitem__(self, index):
-        path = self.directory + "/" + self.text_labels.iloc[index, 0]
-        audio = torchaudio.load(path)
-        label = self.text_labels.iloc[index, 1]
-        return audio, label
+# class KshmrVol3(Dataset):
+#     def __init__(self):
+#         self.directory = "./data/kshmr_data/audio_files"
+#         self.text_labels = pd.read_csv("./data/kshmr_data/descriptions", delimiter=' : ', header=None)
+#         # self.
+#
+#     def __len__(self):
+#         return len(self.text_labels)
+#
+#     def pad_length(self, audio):
+#         if
+#         return audio
+#
+#     def __getitem__(self, index):
+#         path = self.directory + "/" + self.text_labels.iloc[index, 0]
+#         audio = torchaudio.load(path)
+#         label = self.text_labels.iloc[index, 1]
+#         return audio, label
 
 
 def clear_folder(folder):
