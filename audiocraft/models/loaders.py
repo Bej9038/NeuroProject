@@ -79,9 +79,11 @@ def load_compression_model(file_or_url_or_id: tp.Union[Path, str], device='cpu',
     return model
 
 
-def load_init_encodec(file_or_url_or_id: tp.Union[Path, str], device='cpu', cache_dir: tp.Optional[str] = None):
+def load_init_encodec(file_or_url_or_id: tp.Union[Path, str], device, sample_rate, cache_dir: tp.Optional[str] = None):
     pkg = _get_state_dict(file_or_url_or_id, filename="compression_state_dict.bin", cache_dir=cache_dir)
     cfg = OmegaConf.create(pkg['xp.cfg'])
+    cfg.sample_rate = sample_rate
+    cfg.channels = 2
     cfg.device = str(device)
     model = builders.get_compression_model(cfg)
     model.eval()

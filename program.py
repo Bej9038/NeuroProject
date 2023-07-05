@@ -5,14 +5,15 @@ import os
 import torch
 import train
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 
 def main():
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     cache_dir = os.environ.get('MUSICGEN_ROOT', None)
     name = "small"
 
-    encodec = load_init_encodec(name, device=device, cache_dir=cache_dir)
-    train.train_encodec(encodec)
+    encodec = load_init_encodec(name, device=device, sample_rate=train.sample_rate, cache_dir=cache_dir)
+    train.train_encodec(encodec, device)
 
     lm = load_lm_model(name, device=device, cache_dir=cache_dir)
 
@@ -26,7 +27,7 @@ def main():
     )
 
     output = output.to("cpu")
-    torchaudio.save("my_output.wav", output[0], 48000)
+    torchaudio.save("my_output.wav", output[0], train.sample_rate)
 
 
 if __name__ == "__main__":

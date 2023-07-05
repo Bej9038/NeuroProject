@@ -8,33 +8,34 @@ import torch
 from torch.utils.data import Subset, DataLoader
 from audiocraft.data.audio_dataset import AudioDataset
 
-batch_size = 40
+batch_size = 10
 epochs = 20
 lr = 0.01
 wd = 0
+sample_rate = 44100
 dataset = AudioDataset.from_path(root="./data/kshmr_data/audio_files",
-                                 segment_duration=10,
-                                 sample_rate=48000,
+                                 segment_duration=4,
+                                 sample_rate=sample_rate,
                                  channels=2,
                                  pad=True)
 loss_fn = torch.nn.CrossEntropyLoss()
 
 
-def train_encodec(encodec: EncodecModel):
+def train_encodec(encodec: EncodecModel, device):
     encodec.train()
     optimizer = torch.optim.Adam(encodec.parameters(), lr=lr, weight_decay=wd)
-    # descr_optimizer = torch.optim.Adam(encodec, lr=lr, weight_decay=wd)
+    # descr_optimizer = torch.optim.Adam(encodec., lr=lr, weight_decay=wd)
     # ds = Subset(dataset, torch.arange(len(dataset) - 1))
     train_set, val_set = datasets.train_test(dataset, 0.8)
     # collate_fn = pad_to_longest_fn
-    train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=2)
-    val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=True, num_workers=2)
+    train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=2, pin_memory=True)
+    # TODO - dont apply transformations to validation set
+    val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=True, num_workers=2, pin_memory=True)
 
     """ Train """
-    # for epoch in range(epochs):
-    #     for i, (audio_batch, descriptions) in enumerate(train_loader):
-    #         encodec_train_step(encodec, optimizer, descr_optimizer, audio_batch)
-        # evaluate
+    for epoch in range(epochs):
+        for i, audio_batch in enumerate(train_loader):
+            encodec_train_step(encodec, audio_batch, optimizer, device)
 
 
 def train_language_model(lm: torch.nn.Module):
@@ -45,11 +46,11 @@ def lm_train_step():
     pass
 
 
-def encodec_train_step(encodec: EncodecModel, optimizer: torch.optim.Optimizer, descr_optimizer: torch.optim.Optimizer,
-                       audio_batch):
+def encodec_train_step(encodec: EncodecModel, audio_batch, optimizer: torch.optim.Optimizer, device, descr_optimizer: torch.optim.Optimizer = None):
+    torch.cuda.empty_cache()
+    audio_batch = audio_batch.to(device)
     optimizer.zero_grad()
-    descr_optimizer.zero_grad()
-
+    # descr_optimizer.zero_grad()
     output = encodec(audio_batch)
     loss = 0
     loss.backward()
