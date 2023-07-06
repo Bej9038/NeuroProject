@@ -1,46 +1,57 @@
+import sys
+
 import datasets
 from audiocraft.models.encodec import EncodecModel
 import torch
 from torch.utils.data import DataLoader
 from audiocraft.data.audio_dataset import AudioDataset
-import tensorboard
+import torchaudio as ta
+from torch.utils.tensorboard import SummaryWriter
+
 
 batch_size = 10
-epochs = 1
-lr = 0.01
+epochs = 10
+lr = 0.001
 wd = 0
 sample_rate = 44100
 dataset = AudioDataset.from_path(root="./data/kshmr_data/audio_files",
                                  segment_duration=4,
                                  sample_rate=sample_rate,
                                  channels=2,
-                                 num_samples=100,
+                                 num_samples=3130,
                                  pad=True)
 recon_time_loss = torch.nn.L1Loss()
 recon_freq_loss = torch.nn.MSELoss()
 trained_models_dir = "./trained_models"
+writer = SummaryWriter("C:/Users/Ben/Desktop/Neuro Project/tensorboard")
+# C:\Users\Ben\Desktop\Neuro Project\tensorboard
 
 
 def train_encodec(encodec: EncodecModel, device):
     encodec.train()
+    encodec.requires_grad_(True)
     optimizer = torch.optim.Adam(encodec.parameters(), lr=lr, weight_decay=wd)
     # descr_optimizer = torch.optim.Adam(encodec., lr=lr, weight_decay=wd)
     # ds = Subset(dataset, torch.arange(len(dataset) - 1))
     train_set, val_set = datasets.train_test(dataset, 0.8)
-    # collate_fn = pad_to_longest_fn
-    train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, pin_memory=True)
+    train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
     # TODO - dont apply transformations to validation set
-    val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=True, pin_memory=True)
+    val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=True)
+    data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
     """ Train """
     for epoch in range(epochs):
         print("Epoch: " + str(epoch + 1))
-        for i, audio_batch in enumerate(train_loader):
-            print("\t" + str(int((i+1) / len(train_loader) * 100)) + "%")
-            encodec_train_step(encodec, audio_batch, optimizer, device)
+        for i, audio_batch in enumerate(data_loader):
+            ta.save("sample.wav", audio_batch[0], sample_rate)
+            print("\t" + str(int((i+1) / len(data_loader) * 100)) + "%")
+            loss = encodec_train_step(encodec, audio_batch, optimizer, device)
+            writer.add_scalar("encodec loss", loss, i + epoch * len(data_loader))
 
-    print("Saving Encodec")
-    torch.save(encodec, trained_models_dir + "/encodec.pt")
+        print("Saving Encodec")
+        torch.save(encodec, trained_models_dir + "/encodec" + str(epoch) + ".pt")
+
+
 
 
 def train_language_model(lm: torch.nn.Module):
@@ -56,7 +67,20 @@ def encodec_train_step(encodec: EncodecModel, inputs, optimizer: torch.optim.Opt
     inputs = inputs.to(device)
     optimizer.zero_grad()
     q_res = encodec(inputs)
-    loss = recon_time_loss(q_res.x, inputs)
+    loss = recon_time_loss(q_res.x, inputs) * 100
     loss.backward()
     print("\tloss: " + str(round(loss.item(), 2)))
     optimizer.step()
+    return loss.item()
+
+
+def add_tb_graph(train_loader, device, model):
+    model.eval()
+    example = None
+    for i, inputs in enumerate(train_loader):
+        example = inputs.to(device)
+        break
+
+    writer.add_graph(model, example)
+    print("Tensorboard Graph Created")
+    sys.exit(0)

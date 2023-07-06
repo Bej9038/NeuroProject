@@ -43,18 +43,19 @@ def train_test(dataset, split):
 
 
 def main():
-    dir = "./data/kshmr_data/audio_files"
-    # dest = "./data/kshmr_data/audio_files"
-    textfile = "./data/kshmr_data/descriptions"
-    with open(textfile, 'w') as f:
-        f.truncate()
-    with open(textfile, 'a') as f:
-        for root, _, files in os.walk(dir):
-            for file in files:
-                f.write(file + " : " + re.sub(r'\d+', '', file[6:-4])
-                        .replace("___", " ")
-                        .replace("__", " ")
-                        .replace("_", " ") + "\n")
+    clear_folder("./tensorboard")
+    # dir = "./data/kshmr_data/audio_files"
+    # # dest = "./data/kshmr_data/audio_files"
+    # textfile = "./data/kshmr_data/descriptions"
+    # with open(textfile, 'w') as f:
+    #     f.truncate()
+    # with open(textfile, 'a') as f:
+    #     for root, _, files in os.walk(dir):
+    #         for file in files:
+    #             f.write(file + " : " + re.sub(r'\d+', '', file[6:-4])
+    #                     .replace("___", " ")
+    #                     .replace("__", " ")
+    #                     .replace("_", " ") + "\n")
 
 
 if __name__ == "__main__":
