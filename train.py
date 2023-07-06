@@ -57,5 +57,5 @@ def encodec_train_step(encodec: EncodecModel, inputs, optimizer: torch.optim.Opt
     q_res = encodec(inputs)
     loss = recon_time_loss(q_res.x, inputs)
     loss.backward()
-    print("\nloss: " + str(round(loss.item(), 2)))
+    print("\tloss: " + str(round(loss.item(), 2)))
     optimizer.step()
