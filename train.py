@@ -1,11 +1,7 @@
-import torchaudio
 import datasets
-from audiocraft.models import MusicGen
-from audiocraft.models.loaders import load_init_encodec, load_lm_model
 from audiocraft.models.encodec import EncodecModel
-import os
 import torch
-from torch.utils.data import Subset, DataLoader
+from torch.utils.data import DataLoader
 from audiocraft.data.audio_dataset import AudioDataset
 
 batch_size = 10
@@ -17,9 +13,11 @@ dataset = AudioDataset.from_path(root="./data/kshmr_data/audio_files",
                                  segment_duration=4,
                                  sample_rate=sample_rate,
                                  channels=2,
+                                 num_samples=4000,
                                  pad=True)
 recon_time_loss = torch.nn.L1Loss()
 recon_freq_loss = torch.nn.MSELoss()
+trained_models_dir = "./trained_models"
 
 
 def train_encodec(encodec: EncodecModel, device):
@@ -37,8 +35,11 @@ def train_encodec(encodec: EncodecModel, device):
     for epoch in range(epochs):
         print("Epoch: " + str(epoch + 1))
         for i, audio_batch in enumerate(train_loader):
-            print("\t" + str((i+1) * batch_size / len(train_loader) * 100) + "%")
+            print("\t" + str(int((i+1) * batch_size / len(train_loader) * 100)) + "%")
             encodec_train_step(encodec, audio_batch, optimizer, device)
+
+    print("Saving Encodec")
+    torch.save(encodec, trained_models_dir)
 
 
 def train_language_model(lm: torch.nn.Module):
@@ -56,5 +57,5 @@ def encodec_train_step(encodec: EncodecModel, inputs, optimizer: torch.optim.Opt
     q_res = encodec(inputs)
     loss = recon_time_loss(q_res.x, inputs)
     loss.backward()
-    print("loss: " + str(loss.item()))
+    print("\nloss: " + str(round(loss.item(), 2)))
     optimizer.step()
