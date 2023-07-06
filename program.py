@@ -1,4 +1,4 @@
-import torchaudio
+import torchaudio as ta
 from audiocraft.models import MusicGen
 from audiocraft.models.loaders import load_init_encodec, load_lm_model
 import os
@@ -8,7 +8,19 @@ import train
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def main():
+def test_encoder():
+    encodec = torch.load("./trained_models/encodec.pt")
+    audio = ta.load("./data/Sounds of KSHMR Vol. 3/KSHMR_Ambiance_and_Foley/KSHMR_Ambiance_Designed/KSHMR_Airy/KSHMR_Ambiance_Airy_01_A.wav")
+    audio = audio[0][None, :, :]
+    audio = audio.to(device)
+    q_res = encodec(audio)
+    res = q_res.x.to("cpu")
+    res = res.detach()
+    res = res / torch.max(torch.abs(res))
+    ta.save("encodec_output.wav", res[0], train.sample_rate)
+
+
+def train_models():
     cache_dir = os.environ.get('MUSICGEN_ROOT', None)
     name = "small"
 
@@ -27,7 +39,11 @@ def main():
     )
 
     output = output.to("cpu")
-    torchaudio.save("my_output.wav", output[0], train.sample_rate)
+    ta.save("my_output.wav", output[0], train.sample_rate)
+
+
+def main():
+    test_encoder()
 
 
 if __name__ == "__main__":

@@ -3,6 +3,7 @@ from audiocraft.models.encodec import EncodecModel
 import torch
 from torch.utils.data import DataLoader
 from audiocraft.data.audio_dataset import AudioDataset
+import tensorboard
 
 batch_size = 10
 epochs = 1
@@ -13,7 +14,7 @@ dataset = AudioDataset.from_path(root="./data/kshmr_data/audio_files",
                                  segment_duration=4,
                                  sample_rate=sample_rate,
                                  channels=2,
-                                 num_samples=4000,
+                                 num_samples=100,
                                  pad=True)
 recon_time_loss = torch.nn.L1Loss()
 recon_freq_loss = torch.nn.MSELoss()
@@ -27,19 +28,19 @@ def train_encodec(encodec: EncodecModel, device):
     # ds = Subset(dataset, torch.arange(len(dataset) - 1))
     train_set, val_set = datasets.train_test(dataset, 0.8)
     # collate_fn = pad_to_longest_fn
-    train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=2, pin_memory=True)
+    train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, pin_memory=True)
     # TODO - dont apply transformations to validation set
-    val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=True, num_workers=2, pin_memory=True)
+    val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=True, pin_memory=True)
 
     """ Train """
     for epoch in range(epochs):
         print("Epoch: " + str(epoch + 1))
         for i, audio_batch in enumerate(train_loader):
-            print("\t" + str(int((i+1) * batch_size / len(train_loader) * 100)) + "%")
+            print("\t" + str(int((i+1) / len(train_loader) * 100)) + "%")
             encodec_train_step(encodec, audio_batch, optimizer, device)
 
     print("Saving Encodec")
-    torch.save(encodec, trained_models_dir)
+    torch.save(encodec, trained_models_dir + "/encodec.pt")
 
 
 def train_language_model(lm: torch.nn.Module):
