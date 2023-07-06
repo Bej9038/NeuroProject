@@ -9,7 +9,7 @@ from torch.utils.data import Subset, DataLoader
 from audiocraft.data.audio_dataset import AudioDataset
 
 batch_size = 10
-epochs = 20
+epochs = 1
 lr = 0.01
 wd = 0
 sample_rate = 44100
@@ -18,7 +18,8 @@ dataset = AudioDataset.from_path(root="./data/kshmr_data/audio_files",
                                  sample_rate=sample_rate,
                                  channels=2,
                                  pad=True)
-loss_fn = torch.nn.CrossEntropyLoss()
+recon_time_loss = torch.nn.L1Loss()
+recon_freq_loss = torch.nn.MSELoss()
 
 
 def train_encodec(encodec: EncodecModel, device):
@@ -34,7 +35,9 @@ def train_encodec(encodec: EncodecModel, device):
 
     """ Train """
     for epoch in range(epochs):
+        print("Epoch: " + str(epoch + 1))
         for i, audio_batch in enumerate(train_loader):
+            print("\t" + str((i+1) * batch_size / len(train_loader) * 100) + "%")
             encodec_train_step(encodec, audio_batch, optimizer, device)
 
 
@@ -46,14 +49,12 @@ def lm_train_step():
     pass
 
 
-def encodec_train_step(encodec: EncodecModel, audio_batch, optimizer: torch.optim.Optimizer, device, descr_optimizer: torch.optim.Optimizer = None):
+def encodec_train_step(encodec: EncodecModel, inputs, optimizer: torch.optim.Optimizer, device, descr_optimizer: torch.optim.Optimizer = None):
     torch.cuda.empty_cache()
-    audio_batch = audio_batch.to(device)
+    inputs = inputs.to(device)
     optimizer.zero_grad()
-    # descr_optimizer.zero_grad()
-    output = encodec(audio_batch)
-    loss = 0
+    q_res = encodec(inputs)
+    loss = recon_time_loss(q_res.x, inputs)
     loss.backward()
-
+    print("loss: " + str(loss.item()))
     optimizer.step()
-    descr_optimizer.step()
