@@ -86,6 +86,7 @@ def load_init_encodec(file_or_url_or_id: tp.Union[Path, str], device, sample_rat
     cfg.channels = 2
     cfg.device = str(device)
     model = builders.get_compression_model(cfg)
+    model.renormalize = True
     model.eval()
     return model
 

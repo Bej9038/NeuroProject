@@ -10,15 +10,17 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 def test_encoder():
-    encodec = torch.load("./trained_models/encodec.pt")
+    encodec = torch.load("./trained_models/encodec6.pt")
     encodec.eval()
-    audio = ta.load("./data/Sounds of KSHMR Vol. 3/KSHMR_Ambiance_and_Foley/KSHMR_Ambiance_Designed/KSHMR_Airy/KSHMR_Ambiance_Airy_01_A.wav")
-    audio = audio[0][None, :, :]
+    audio = ta.load("./data/LibriSpeech/train-clean-100/19/198/19-198-0000.flac")
+    ta.save("sample.wav", audio[0], train.sample_rate)
+    audio = audio[0]#[None, :, :]
+    audio = torch.stack([audio, audio], 1)
     audio = audio.to(device)
     q_res = encodec(audio)
     res = q_res.x.to("cpu")
     res = res.detach()
-    # res = res / torch.max(torch.abs(res))
+    res = res + 0.5
     ta.save("encodec_output.wav", res[0], train.sample_rate)
 
 
