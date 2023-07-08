@@ -1,3 +1,4 @@
+import math
 import sys
 import datasets
 from audiocraft.models.encodec import EncodecModel
@@ -18,7 +19,6 @@ dataset = AudioDataset.from_path(root="./data/LibriSpeech",
                                  pad=True)
 trained_models_dir = "./trained_models"
 writer = SummaryWriter("C:/Users/Ben/Desktop/Neuro Project/tensorboard")
-# C:\Users\Ben\Desktop\Neuro Project\tensorboard
 
 """ Hyperparams """
 batch_size = 24
@@ -26,6 +26,7 @@ epochs = 20
 lr = 0.0003
 wd = 0
 
+""" Loss Functions """
 time_recon_loss = torch.nn.L1Loss(reduction="mean")
 def freq_recon_loss(pred_audio, target_audio):
     l1_loss = torch.nn.MSELoss()#reduction="sum")
@@ -41,12 +42,16 @@ def freq_recon_loss(pred_audio, target_audio):
                                                        hop_length=k//4).to(pred_audio.device)
         pred_mel = mel_spectrogram(pred_audio)
         target_mel = mel_spectrogram(target_audio)
-        display_mel(target_mel[0])
-
-        total_loss += l1_loss(pred_mel, target_mel) + l2_loss(pred_mel, target_mel)
+        # display_mel(target_mel[0])
+        total_loss += l1_loss(pred_mel, target_mel) + math.sqrt(l2_loss(pred_mel, target_mel))
     return total_loss / len(window_sizes)
 
 
+def vq_commit_loss():
+    mse = torch.nn.MSELoss()
+
+
+""" Training Code """
 def train_encodec(encodec: EncodecModel, device):
     encodec.train()
     encodec.requires_grad_(True)
@@ -95,12 +100,21 @@ def encodec_train_step(encodec: EncodecModel, inputs, optimizer: torch.optim.Opt
     optimizer.zero_grad()
 
     q_res = encodec(inputs)
-    loss = time_recon_loss(q_res.x, inputs) + freq_recon_loss(q_res.x, inputs)
+    loss = time_recon_loss(q_res.x, inputs) + freq_recon_loss(q_res.x, inputs) + q_res.penalty
     loss.backward()
 
     print("\tloss: " + str(round(loss.item(), 4)))
     optimizer.step()
     return loss.item()
+
+
+def display_mel(mel):
+    mel = mel.to("cpu")
+    _, ax = plt.subplots(1, 1)
+    ax.set_ylabel("freq_bin")
+    ax.set_xlabel("time")
+    ax.imshow(librosa.power_to_db(mel[0]), origin="lower", aspect="auto", interpolation="nearest")
+    plt.show(block=False)
 
 
 def add_tb_graph(train_loader, device, model):
@@ -113,12 +127,3 @@ def add_tb_graph(train_loader, device, model):
     writer.add_graph(model, example)
     print("Tensorboard Graph Created")
     sys.exit(0)
-
-
-def display_mel(mel):
-    mel = mel.to("cpu")
-    _, ax = plt.subplots(1, 1)
-    ax.set_ylabel("freq_bin")
-    ax.set_xlabel("time")
-    ax.imshow(librosa.power_to_db(mel[0]), origin="lower", aspect="auto", interpolation="nearest")
-    plt.show(block=False)
