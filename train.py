@@ -10,18 +10,18 @@ from torch.utils.tensorboard import SummaryWriter
 import matplotlib.pyplot as plt
 import librosa
 
-sample_rate = 24000
+sample_rate = 24_000
 dataset = AudioDataset.from_path(root="./data/LibriSpeech",
-                                 segment_duration=1,
+                                 segment_duration=2,
                                  sample_rate=sample_rate,
                                  channels=2,
-                                 num_samples=3000,
+                                 num_samples=30_000,
                                  pad=True)
 trained_models_dir = "./trained_models"
 writer = SummaryWriter("C:/Users/Ben/Desktop/Neuro Project/tensorboard")
 
 """ Hyperparams """
-batch_size = 24
+batch_size = 26
 epochs = 20
 lr = 0.0003
 wd = 0
@@ -65,13 +65,13 @@ def train_encodec(encodec: EncodecModel, device):
     # data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
     """ Train """
-    for epoch in range(epochs):
+    for epoch in range(3, epochs):
         print("Epoch: " + str(epoch + 1))
         for i, inputs in enumerate(train_loader):
-            ta.save("sample.wav", inputs[0], sample_rate)
+            # ta.save("sample.wav", inputs[0], sample_rate)
             print("\t" + str(int((i+1) / len(train_loader) * 100)) + "%")
             loss = encodec_train_step(encodec, inputs, optimizer, device)
-            writer.add_scalar("encodec loss", loss, i + epoch * len(train_loader))
+            writer.add_scalar("encodec loss", loss, i + (epoch + 1) * len(train_loader))
 
         """ Validate """
         # running_loss = 0
@@ -83,7 +83,7 @@ def train_encodec(encodec: EncodecModel, device):
         # print("\tvloss: " + str(round(running_loss/len(val_loader), 4)))
 
         print("Saving Encodec")
-        torch.save(encodec, trained_models_dir + "/encodec" + str(epoch) + ".pt")
+        torch.save(encodec, trained_models_dir + "/encodec" + str(epoch + 1) + ".pt")
 
 
 def train_language_model(lm: torch.nn.Module):
